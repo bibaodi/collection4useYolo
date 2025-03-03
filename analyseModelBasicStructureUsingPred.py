@@ -7,10 +7,16 @@ from ultralytics import YOLO
 
 import onnxruntime as onnx
 
-s_score_threshold=0.5
+s_score_threshold=0.9
 
 
 def process_mode_output(pred):
+    xc = pred[:, 4:5].max(1) > s_score_threshold  # candidates
+    indices = np.where(xc.squeeze())
+    for i in indices:
+        print(f"true value shape={i.shape},coordinate ={i}")
+    print(f"xc shape={xc.shape}, indexshape={pred[:, 4:5].shape}, {xc}")
+
     squeezed = np.squeeze(pred)
 
     predictions = squeezed
@@ -34,7 +40,7 @@ def process_mode_output(pred):
             continue
         # Find the maximum score among the class scores
         max_score = np.amax(classes_scores)
-        print(f"{i:03}:max_score={max_score}, classes_scores={classes_scores}")
+        #print(f"{i:03}:max_score={max_score}, classes_scores={classes_scores}")
 
         # Get the class ID with the highest score
         class_id = np.argmax(classes_scores)
@@ -61,13 +67,18 @@ def process_mode_output(pred):
     # Apply non-maximum suppression to filter out overlapping bounding boxes
     indices = cv2.dnn.NMSBoxes(boxes, scores, s_score_threshold, iou_threshold)
     print(f"indices: {len(indices)}={indices}")
+
+
+    debugCnt=0
     # Iterate over the selected indices after non-maximum suppression
     for i in indices:
         # Get the box, score, and class ID corresponding to the index
         box = boxes[i]
         score = scores[i]
         class_id = class_ids[i]
-        print(f"{i:04d}: box={box}; scores={score}, class_ids={class_id}")
+        debugCnt+=1
+    if debugCnt<10:
+       	print(f"{i:04d}: box={box}; scores={score}, class_ids={class_id}")
 
     scores = predictions[:, 4]
     print(f"prediction score={scores}")
@@ -134,10 +145,18 @@ def predict_with_onnx(modelfile, imagefile):
     return
 
 def predict_TIRADS_01(modelfile, imagefile):
-    model = YOLO(modelfile)
-    # Run inference on 'bus.jpg'
+    model = YOLO(modelfile, task='detect')  # Initialize model
+    print(f"device={model.device}")
+    # Set the device to CPU
+    #model = model.to("cpu")
+    print(f"device={model.device}")
+    
+    # Run inference
     #results = model([imagefile])  # results list
-    results = model.predict([imagefile])  # results list
+    if modelfile.endswith('.onnx'):
+        results = model.predict([imagefile], device='cpu')  # results list
+    else:
+        results = model.predict([imagefile], device=0)  # results list
     NofRets=len(results)
     print(f".pt {'='*64}results type={type(results)}, len={len(results)}")
     if NofRets>0:
