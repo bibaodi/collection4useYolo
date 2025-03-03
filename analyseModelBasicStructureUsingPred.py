@@ -7,24 +7,33 @@ from ultralytics import YOLO
 
 import onnxruntime as onnx
 
-s_score_threshold=0.9
+s_score_threshold=0.24
 
 
 def process_mode_output(pred):
+    print(f"prediction shape={pred.shape}, type={type(pred)}")  #prediction shape=(1,5, 8400)
+    squeezed = np.squeeze(pred)#shape=(1, 5, 8400)
+    pred = squeezed
+    print(f"prediction shape={pred.shape}, type={type(pred)}")  #prediction shape=(5, 8400)
+    predictions = pred.transpose((-1, -2))
+    pred=predictions
+    print(f"prediction shape={pred.shape}, type={type(pred)}")  #prediction shape=(5, 8400)
     xc = pred[:, 4:5].max(1) > s_score_threshold  # candidates
-    indices = np.where(xc.squeeze())
-    for i in indices:
-        print(f"true value shape={i.shape},coordinate ={i}")
     print(f"xc shape={xc.shape}, indexshape={pred[:, 4:5].shape}, {xc}")
 
-    squeezed = np.squeeze(pred)
-
-    predictions = squeezed
-    print(f"prediction shape={predictions.shape}")  #prediction shape=(5, 8400)
-
-    predictions = predictions.transpose((1, 0))
+    indices = np.where(xc.squeeze())
+    print(f"indices.type={type(indices)}, indices={indices}")
+    for i in indices:
+        print(f"true value shape={i.shape},coordinate ={i}")
+    
+    
     print(f"prediction shape={predictions.shape}")  #prediction shape=(8400, 5)
+    predictions=predictions[xc.squeeze()]
+    print(f"prediction shape={predictions.shape}")  #prediction shape=(108, 5)
 
+    if predictions.shape[0] <1:
+        print(f"WARN: no predictions")
+        return []
     debugCnt = 0
 
     # Lists to store the bounding boxes, scores, and class IDs of the detections
@@ -97,6 +106,52 @@ def process_mode_output(pred):
     max_conf_box = high_conf_preds[0]
     selected_boxes = [max_conf_box]
 
+
+#preprocess
+import torch
+def preprocessImg( im):
+    """
+    Prepares input image before inference.
+
+    Args:
+        im (torch.Tensor | List(np.ndarray)): BCHW for tensor, [(HWC) x B] for list.
+    """
+    not_tensor = not isinstance(im, torch.Tensor)
+    if not_tensor:
+        im = np.stack(im.transpose(2, 0, 1))  # HWC to CHW, (n, h, w, 3) to (n, 3, h, w)
+        im = im[..., ::-1].transpose((0, 3, 1, 2))  # BGR to RGB, BHWC to BCHW, (n, 3, h, w)
+        im = np.ascontiguousarray(im)  # contiguous
+        im = torch.from_numpy(im)
+
+    im = im.float()  
+    #im = im.to(self.device)
+    #im = im.half() if self.model.fp16 else im.float()  # uint8 to fp16/32
+    
+    if not_tensor:
+        im /= 255  # 0 - 255 to 0.0 - 1.0
+    return im
+
+
+    def preprocess(self, im):
+        """
+        Prepares input image before inference.
+
+        Args:
+            im (torch.Tensor | List(np.ndarray)): BCHW for tensor, [(HWC) x B] for list.
+        """
+        not_tensor = not isinstance(im, torch.Tensor)
+        if not_tensor:
+            im = np.stack(self.pre_transform(im))
+            im = im[..., ::-1].transpose((0, 3, 1, 2))  # BGR to RGB, BHWC to BCHW, (n, 3, h, w)
+            im = np.ascontiguousarray(im)  # contiguous
+            im = torch.from_numpy(im)
+
+        im = im.to(self.device)
+        im = im.half() if self.model.fp16 else im.float()  # uint8 to fp16/32
+        if not_tensor:
+            im /= 255  # 0 - 255 to 0.0 - 1.0
+        return im
+
 def predict_with_onnx(modelfile, imagefile):
     model_sess = onnx.InferenceSession(modelfile)
     inputs=model_sess.get_inputs()
@@ -121,8 +176,9 @@ def predict_with_onnx(modelfile, imagefile):
     oup_name=oup.name
     imgData=cv2.imread(imagefile)
     imgData.resize(inp_shape)
-    imgData = imgData.astype(np.float32) #/ 255.0
+    imgData = imgData.astype(np.float32) / 255.0
     #image actual size=(768, 1024, 3)
+    #imgData.transpose(2, 0, 1)
     print(f"image actual size={imgData.shape}, modelInputShape={inp_shape}")
     results = model_sess.run([oup_name], {inp_name: imgData})
     NofRets=len(results)
@@ -130,6 +186,7 @@ def predict_with_onnx(modelfile, imagefile):
     if NofRets>0:
         ret0=results[0]
         process_mode_output(ret0)
+
         print(f"result type={type(ret0)}, shape={ret0.shape}")
         predNd=ret0[0]#5,8400;
         # Condition: M0[4, :] > 0.1
