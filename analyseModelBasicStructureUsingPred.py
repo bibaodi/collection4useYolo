@@ -7,13 +7,67 @@ from ultralytics import YOLO
 
 import onnxruntime as onnx
 
-s_score_threshold=0
+s_score_threshold=0.5
+
 
 def process_mode_output(pred):
-    predictions = pred[0]
-    print(f"prediction shape={predictions.shape}")
+    squeezed = np.squeeze(pred)
+
+    predictions = squeezed
+    print(f"prediction shape={predictions.shape}")  #prediction shape=(5, 8400)
+
     predictions = predictions.transpose((1, 0))
-    print(f"prediction shape={predictions.shape}")
+    print(f"prediction shape={predictions.shape}")  #prediction shape=(8400, 5)
+
+    debugCnt = 0
+
+    # Lists to store the bounding boxes, scores, and class IDs of the detections
+    boxes = []
+    scores = []
+    class_ids = []
+    gain=1.0
+    rows = predictions.shape[0]
+    for i in range(rows):
+        # Extract the class scores from the current row
+        classes_scores = predictions[i][4:]
+        if classes_scores<s_score_threshold:
+            continue
+        # Find the maximum score among the class scores
+        max_score = np.amax(classes_scores)
+        print(f"{i:03}:max_score={max_score}, classes_scores={classes_scores}")
+
+        # Get the class ID with the highest score
+        class_id = np.argmax(classes_scores)
+
+        # Extract the bounding box coordinates from the current row
+        x, y, w, h = predictions[i][0], predictions[i][1], predictions[i][2], predictions[i][3]
+
+        # Calculate the scaled coordinates of the bounding box
+        left = int((x - w / 2) / gain)
+        top = int((y - h / 2) / gain)
+        width = int(w / gain)
+        height = int(h / gain)
+
+        # Add the class ID, score, and box coordinates to the respective lists
+        class_ids.append(class_id)
+        scores.append(max_score)
+        boxes.append([left, top, width, height])
+        debugCnt+=1
+        if debugCnt >100:
+            break
+    
+    print(f"nof boxes: {len(boxes)}")
+    iou_threshold = 0.01
+    # Apply non-maximum suppression to filter out overlapping bounding boxes
+    indices = cv2.dnn.NMSBoxes(boxes, scores, s_score_threshold, iou_threshold)
+    print(f"indices: {len(indices)}={indices}")
+    # Iterate over the selected indices after non-maximum suppression
+    for i in indices:
+        # Get the box, score, and class ID corresponding to the index
+        box = boxes[i]
+        score = scores[i]
+        class_id = class_ids[i]
+        print(f"{i:04d}: box={box}; scores={score}, class_ids={class_id}")
 
     scores = predictions[:, 4]
     print(f"prediction score={scores}")
@@ -45,9 +99,9 @@ def predict_with_onnx(modelfile, imagefile):
     for output in outputs:
         print(f"output-type={type(output)}, {output}")
 #input-type=<class 'onnxruntime.capi.onnxruntime_pybind11_state.NodeArg'>,
-    #NodeArg(name='images', type='tensor(float)', shape=[1, 3, 640, 640])
-#output-type=<class 'onnxruntime.capi.onnxruntime_pybind11_state.NodeArg'>, 
-    #NodeArg(name='output0', type='tensor(float)', shape=[1, 5, 8400])
+#NodeArg(name='images', type='tensor(float)', shape=[1, 3, 640, 640])
+#output-type=<class 'onnxruntime.capi.onnxruntime_pybind11_state.NodeArg'>,
+#NodeArg(name='output0', type='tensor(float)', shape=[1, 5, 8400])
     inp=inputs[0]
     inp_name=inp.name
     inp_shape = inp.shape #[-2:]
@@ -61,7 +115,7 @@ def predict_with_onnx(modelfile, imagefile):
     print(f"image actual size={imgData.shape}, modelInputShape={inp_shape}")
     results = model_sess.run([oup_name], {inp_name: imgData})
     NofRets=len(results)
-    print(f"results type={type(results)}, len={len(results)}")
+    print(f"onnx: results type={type(results)}, len={len(results)}")
     if NofRets>0:
         ret0=results[0]
         process_mode_output(ret0)
@@ -69,13 +123,13 @@ def predict_with_onnx(modelfile, imagefile):
         predNd=ret0[0]#5,8400;
         # Condition: M0[4, :] > 0.1
         condition = predNd[4, :] > 0.1
-        # Extract the submatrix using the condition
+        # Extract the submatrix using the conditiongain
         subPred = predNd[:, condition]
-        
-        for irow in range( max(subPred.shape[1], 5)):
+
+        for irow in range( min(subPred.shape[1], 5)):
             ipred=subPred[:, irow]
             print(f"{irow}: shape={ipred.shape}, top10={ipred.tolist()}")
-        #print(f"result={ret0}") 
+        #print(f"result={ret0}")
         #print(f"boxes:{ret0.boxes}")
     return
 
@@ -90,10 +144,10 @@ def predict_TIRADS_01(modelfile, imagefile):
         ret0=results[0]
         print(f"result type={type(ret0)}")
         #print(f"result={ret0}")
-        
+
         print(f"boxes:{ret0.boxes}")
 
-    return 
+    return
     # Visualize the results
     for i, r in enumerate(results):
         # Plot results image
@@ -112,11 +166,11 @@ if __name__ == "__main__":
         print(f"Usage: {sys.argv[0]} <model> <image>")
         sys.exit(1)
     m=sys.argv[1]
-    m=r'/home/eton/00-src/250101-YOLO-ultralytics/42-250107-train_BenignMalign/runs/detect/train16/weights/best.pt'
+    m=r'../250301error_multiBoxes/best.pt'
     mx=m.replace('.pt', '.onnx')
     img=sys.argv[2]
     img=r'/home/eton/00-src/250101-YOLO-ultralytics/datasets/yoloDataset01/images/train/301PACS02-2401010411.01_frm-0002.png'
-    img=r'687.jpg'
+    img=r'../250301error_multiBoxes/687.jpg'
     #img=sys.argv[2]
     predict_TIRADS_01(m, img)
     predict_with_onnx(mx, img)
