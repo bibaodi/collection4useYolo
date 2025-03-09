@@ -12,7 +12,7 @@ model = YOLO("yolo11n.pt")
 # datasetf=r'../datasets/301Pacs978Items4ObjectDetectBenignMalignV1_250109/301Pacs978Items4ObjectDetectBenignMalign.yaml'
 datasetHome=r'../datasets/'
 datasetName=r'ThyNodu_250215.yaml '
-trainMessage="only detect the thyroid nodule, add another4393 items"
+trainMessage="only detect the thyroid nodule, add another4393+11036 items"
 
 datasetf=datasetHome+datasetName
 results = model.train(data=datasetf, epochs=90)
