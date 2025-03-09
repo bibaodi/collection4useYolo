@@ -9,19 +9,22 @@ from ultralytics import YOLO
 
 # Load a pretrained YOLO model (recommended for training)
 model = YOLO("yolo11n-cls.pt")  # load a pretrained model (recommended for training)
+#model = YOLO("yolo11-cls-resnet18.yaml")  # load modeli yolo11-cls-resnet18.yaml from yaml 
+#model = YOLO("yolo11m-cls.pt")  # load maxs pretrained model
 
 # Train the model using the 'coco8.yaml' dataset for 3 epochs
 # datasetf=r'../datasets/301Pacs978Items4ObjectDetectBenignMalignV1_250109/301Pacs978Items4ObjectDetectBenignMalign.yaml'
 datasetHome=r'../datasets/'
 datasetName=r"301pacsDataInLbmfmtRangeY22-24.clsBoM_extend2times"
 datasetName=r"clsBoM_v01_extend2times"
-trainMessage="first train to classify Benign Malign model, 8/2 for train/val"
+datasetName=r"clsBoM_v02"
+trainMessage="2cd train to classify Benign Malign model, 8/2 for train/val, delete too small images"
 
 datasetf=datasetHome+datasetName
 
 # Train the model
 #results = model.train(data="mnist", epochs=10, imgsz=32)
-results = model.train(data=datasetf, epochs=120, imgsz=96)
+results = model.train(data=datasetf, epochs=90, imgsz=224)#96
 
 # Validate the model
 metrics = model.val()  # no arguments needed, dataset and settings remembered
