@@ -15,14 +15,14 @@ datasetName=r'ThyNodu_250215.yaml '
 trainMessage="only detect the thyroid nodule, add another4393+11036 items"
 
 datasetf=datasetHome+datasetName
-results = model.train(data=datasetf, epochs=90)
+results = model.train(data=datasetf, epochs=1)
 
 # Evaluate the model's performance on the validation set
 results = model.val()
 
 # Perform object detection on an image using the model
 #results = model("https://ultralytics.com/images/bus.jpg")
-tobeTestImg=r'../datasets/yoloDataset01.V0/images/val/301PACS02-2401010285_frm-0001.png'
+tobeTestImg=r'../datasets/42-minibatch/thynodu-t01.jpg'
 results = model.predict(tobeTestImg)
 # Export the model to ONNX format
 success = model.export(format="onnx")

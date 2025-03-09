@@ -19,10 +19,10 @@ def is_valid_label_file(file_path):
                     return False
                 class_id, x_center, y_center, width, height = map(float, parts)
                 if not (0 <= class_id < 100 and
-                        0 <= x_center <= 1 and
-                        0 <= y_center <= 1 and
-                        0 <= width <= 1 and
-                        0 <= height <= 1):
+                        0 < x_center < 1 and
+                        0 < y_center < 1 and
+                        0 < width <= 1 and
+                        0 < height <= 1):
                     return False
         return True
     except Exception as e:
