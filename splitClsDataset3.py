@@ -6,7 +6,12 @@ from pathlib import Path
 def split_dataset(origin_path, split_ratio, output_name):
     # Convert relative paths to absolute paths
     origin_path = Path(origin_path).resolve()
-    output_path = origin_path.parent / output_name
+    outpath = Path(output_name).resolve()
+    if False == outpath.is_dir():
+        output_path = origin_path.parent / output_name
+    else:
+        output_path = outpath
+    print(f">>>outPath={output_path}")
 
     # Check if the origin path exists
     if not origin_path.exists() or not origin_path.is_dir():
