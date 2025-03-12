@@ -25,7 +25,7 @@ datasetf=datasetHome+datasetName
 
 # Train the model
 #results = model.train(data="mnist", epochs=10, imgsz=32)
-results = model.train(data=datasetf, epochs=1, imgsz=96, erasing=0.1)#96
+results = model.train(data=datasetf, epochs=90, imgsz=96, erasing=0.07)#96
 
 # Validate the model
 metrics = model.val()  # no arguments needed, dataset and settings remembered
@@ -35,7 +35,7 @@ metrics.top1  # top1 accuracy
 success = model.export(format="onnx")
 # Perform object detection on an image using the model
 #results = model("https://ultralytics.com/images/bus.jpg")
-tobeTestImg=datasetf+r'/test/malign/301PACS02-2201041312.01_frm-0002.png'
+tobeTestImg=r'../datasets/42-minibatch/thynodu-t03.jpg'
 testImg=pathlib.Path(tobeTestImg)
 if testImg.is_file():
     results = model.predict(tobeTestImg)
