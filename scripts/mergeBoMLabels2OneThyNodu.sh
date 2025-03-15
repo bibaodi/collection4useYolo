@@ -1,6 +1,6 @@
 #!/bin/bash
 #eton@250215 merge two labels(0,1)(Benign, Malign) to one(0=ThyNodu)
-
+#eton@250315 add '-L' to find, otherwise the type f not work for symbolic link;
 # Function to update YOLO label files
 function update_yolo_labels() {
 	local LOG_SKIP_FILE=0
@@ -21,7 +21,7 @@ if [[ $confirm != [yY] ]]; then
 fi
 
     # Find all .txt files in the directory and its subdirectories
-    find "$LABEL_DIR" -type f -name "*.txt" | while read -r file; do
+    find -L "$LABEL_DIR" -type f -name "*.txt" | while read -r file; do
         # Check if the file contains the label '1'
         if grep -q '\b1\b' "$file"; then
             # Use sed to replace all occurrences of '1' with '0' in the file
