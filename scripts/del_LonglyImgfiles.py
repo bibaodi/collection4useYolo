@@ -1,10 +1,20 @@
-import os
+import os,sys
 import shutil
 import logging
 
 # Configure logging
 logging.basicConfig(filename='find-longly-images.log', level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
+
+def confirm_action(prompt):
+    while True:
+        response = input(f"{prompt} (yes/no): ").strip().lower()
+        if response in ['yes', 'y']:
+            return True
+        elif response in ['no', 'n']:
+            return False
+        else:
+            print("Please enter 'yes' or 'no'.")
 
 def find_image_files(folder_path, image_extensions):
     image_files = []
