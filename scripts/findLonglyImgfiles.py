@@ -3,7 +3,7 @@ import shutil
 import logging
 
 # Configure logging
-logging.basicConfig(filename='image_label_check.log', level=logging.INFO,
+logging.basicConfig(filename='find-longly-images.log', level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 def find_image_files(folder_path, image_extensions):
@@ -12,30 +12,40 @@ def find_image_files(folder_path, image_extensions):
         for file in files:
             if file.lower().endswith(tuple(image_extensions)):
                 image_files.append(os.path.join(root, file))
+    image_files.sort()
     return image_files
 
 def move_to_error_folder(file_path, error_folder):
     if not os.path.exists(error_folder):
         os.makedirs(error_folder)
     shutil.move(file_path, os.path.join(error_folder, os.path.basename(file_path)))
-    print(f"Moved image file to error folder: {file_path}")
+    relPath =  os.path.relpath(file_path, start='images')
+    print(f"Moved image file to error folder: {relPath}")
     logging.info(f"Moved image file to error folder: {file_path}")
 
 def check_labels(image_files, labels_folder, error_folder):
+    logging.info(f"image files: total={len(image_files)}")
+    delCount=0
     for image_path in image_files:
         # Construct the expected label file path
         relative_path = os.path.relpath(image_path, start='images')
         label_path = os.path.join(labels_folder, relative_path.replace('.jpg', '.txt').replace('.png', '.txt'))
 
         if not os.path.exists(label_path):
+            delCount +=1
+            labelRelPath = os.path.relpath(label_path, start='labels')
+            logging.info(f"{delCount}-not found:{labelRelPath}, for {relative_path}")
+            #print(f"NO{delCount}-:{label_path} not found..")
             move_to_error_folder(image_path, error_folder)
+        
+        #break
 
 if __name__ == "__main__":
     dataset_folder = 'path/to/dataset'  # Path to the dataset folder
-    dataset_folder = '/home/eton/00-src/yolo-ultralytics-250101/datasets/301pacsDataInLbmfmtRangeY22-24.ThyNoduOnlyV1'  # Path to the dataset folder
+    dataset_folder = '/home/eton/00-src/yolo-ultralytics-250101/datasets/thyNoduBoMSegV01'  # Path to the dataset folder
     images_folder = os.path.join(dataset_folder, 'images')
     labels_folder = os.path.join(dataset_folder, 'labels')
-    error_folder = os.path.join(dataset_folder, 'error-imgs')  # Path to the error folder
+    error_folder = os.path.join(dataset_folder, 'error-longlyImgs')  # Path to the error folder
 
     image_extensions = ['.jpg', '.png', '.jpeg']  # Add more extensions if needed
 
