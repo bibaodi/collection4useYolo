@@ -48,6 +48,7 @@ import datetime
 # Third-party imports
 import cv2
 import numpy as np
+import torch
 from ultralytics import YOLO
 from tqdm import tqdm
 
@@ -245,6 +246,25 @@ class ImageSegmenter:
         
 
 
+def get_acceleration_device() -> str:
+    """Detect and return appropriate acceleration device with logging"""
+    if torch.cuda.is_available():
+        num_gpus = torch.cuda.device_count()
+        logging.info(f"Using CUDA with {num_gpus} GPU(s)")
+        return 'cuda'
+    if torch.backends.mps.is_available():
+        logging.info("Using Apple Metal Performance Shaders (MPS)")
+        logging.warning("MPS support is experimental - verify output quality")
+        return 'mps'
+    if hasattr(torch, 'xpu') and torch.xpu.is_available():
+        logging.info("Using Intel XPU acceleration")
+        return 'xpu'
+    if hasattr(torch, 'rocm') and torch.cuda.is_rocm_available():
+        logging.info("Using AMD ROCm acceleration")
+        return 'rocm'
+    logging.warning("No GPU acceleration available, using CPU")
+    return 'cpu'
+
 def run_processing_pipeline(
     model_file: str,
     image_paths: List[str],
@@ -263,13 +283,16 @@ def run_processing_pipeline(
         if model.task != 'segment':
             raise ValueError(f"Model {model_file} is not a segmentation model")
             
+        # Get acceleration device
+        device = get_acceleration_device()
+
         with ImageSegmenter(output_dir, enlarge_thresholds, enlarge_percent,
                       save_types, min_save_size, input_root=input_root) as processor:
             progress_bar = tqdm(total=len(image_paths), desc="Processing images", unit="img")
             
             for i in range(0, len(image_paths), batch_size):
                 batch_paths = image_paths[i:i + batch_size]
-                results = model.predict(batch_paths, verbose=False)
+                results = model.predict(batch_paths, verbose=False, device=device)
                 processor.process_batch(results)
                 # Update progress bar with actual processed count
                 processed = min(i + batch_size, len(image_paths))
