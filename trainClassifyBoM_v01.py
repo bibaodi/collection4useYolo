@@ -8,7 +8,7 @@ import pathlib
 #model = YOLO("yolo11n.yaml")
 
 # Load a pretrained YOLO model (recommended for training)
-model = YOLO("yolo11n-cls.pt")  # load a pretrained model (recommended for training)
+model = YOLO("thynoduClsBoM.pt")  # load a pretrained model (recommended for training)
 #model = YOLO("yolo11-cls-resnet18.yaml")  # load modeli yolo11-cls-resnet18.yaml from yaml 
 #model = YOLO("yolo11m-cls.pt")  # load maxs pretrained model
 
@@ -17,9 +17,11 @@ model = YOLO("yolo11n-cls.pt")  # load a pretrained model (recommended for train
 datasetHome=r'../datasets/'
 datasetName=r"301pacsDataInLbmfmtRangeY22-24.clsBoM_extend2times"
 datasetName=r"clsBoM_v01_extend2times"
-datasetName=r"clsBoM_v03test"
+datasetName=r"clsBoM_v05"
 trainMessage="2cd train to classify Benign Malign model, 8/2 for train/val, delete too small images"
 trainMessage="3rd test on dong5k images only"
+trainMessage="4th with new corrected BoM data singleNodule Part:thyroidNodule4BenMalSingle250322"
+trainMessage="5th with new corrected BoM data multiNodule Part:thyroidNodule4BenMalMulti250322"
 
 datasetf=datasetHome+datasetName
 
