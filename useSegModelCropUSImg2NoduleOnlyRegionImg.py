@@ -151,21 +151,18 @@ class ImageSegmenter:
         cv2.imwrite(f"{output_base}-contour.png", viz_img)
         
     def _save_basic_crop(self, img, contour, output_base):
-        """Save direct bounding box crop with size check"""
         x, y, w, h = cv2.boundingRect(contour)
-        if w < self.min_save_size or h < self.min_save_size:
+        if w < self.m_min_save_size or h < self.m_min_save_size:  # Fixed prefix
             return
         cv2.imwrite(f"{output_base}-crop.png", img[y:y+h, x:x+w])
         
     def _save_enlarged_crop(self, img, contour, output_base):
-        """Save enlarged crop with size check"""
         x, y, w, h = cv2.boundingRect(contour)
-        min_thresh, max_thresh = self.enlarge_thresholds
+        min_thresh, max_thresh = self.m_enlarge_thresholds  # Fixed
         
-        # Calculate safe enlargement parameters
-        extend_w = np.clip(int((w * self.enlarge_percent)/200), 
+        extend_w = np.clip(int((w * self.m_enlarge_percent)/200),  # Fixed
                           min_thresh, max_thresh)
-        extend_h = np.clip(int((h * self.enlarge_percent)/200), 
+        extend_h = np.clip(int((h * self.m_enlarge_percent)/200),  # Fixed
                           min_thresh, max_thresh)
         
         # Calculate bounded coordinates
@@ -176,7 +173,7 @@ class ImageSegmenter:
         
         new_w = new_x_end - new_x
         new_h = new_y_end - new_y
-        if new_w < self.min_save_size or new_h < self.min_save_size:
+        if new_w < self.m_min_save_size or new_h < self.m_min_save_size:
             return
             
         cv2.imwrite(f"{output_base}-enlarged-crop.png", 
@@ -192,8 +189,7 @@ class ImageSegmenter:
         
         os.makedirs(dest_dir, exist_ok=True)
         base_name = os.path.splitext(os.path.basename(input_path))[0]
-        return os.path.join(dest_dir, base_name)
-
+        return os.path.join(dest_dir, base_name)  # Added return statement
 
 
 
@@ -215,8 +211,14 @@ def run_processing_pipeline(
         if model.task != 'segment':
             raise ValueError(f"Model {model_file} is not a segmentation model")
             
-        with ImageSegmenter(output_dir, enlarge_thresholds, enlarge_percent, 
-                           save_types, min_save_size, input_root) as processor:
+        with ImageSegmenter(
+            output_dir,  # Correct first parameter
+            enlarge_thresholds,
+            enlarge_percent,
+            save_types,
+            min_save_size,
+            input_root=input_root
+        ) as processor:
             batch_size = 32
             progress_bar = tqdm(total=len(image_paths), desc="Processing images", unit="img")
             
