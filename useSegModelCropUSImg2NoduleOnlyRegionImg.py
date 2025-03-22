@@ -73,40 +73,38 @@ logging.basicConfig(
 class ImageSegmenter:
     """Main processor for segmentation and image cropping operations"""
     
-    def __init__(self, 
-                 output_dir: str = "/tmp",
-                 enlarge_thresholds: Tuple[int, int] = (32, 320),
-                 enlarge_percent: int = 100,
-                 save_types: List[str] = ['enlarged-crop'],
-                 min_save_size: int = 64,
-                 input_root: str = None) -> None:
-        # Add validation for parameters
+    def __init__(self, output_dir: str, enlarge_thresholds: Tuple[int, int], 
+               enlarge_percent: int, save_types: List[str], min_save_size: int,
+               input_root: str = None) -> None:
         if enlarge_percent < 10 or enlarge_percent > 1000:
             raise ValueError("Enlarge percentage must be between 10 and 1000")
         if min_save_size < 16:
             raise ValueError("Minimum save size must be at least 1 pixel")
 
-        self.output_dir = output_dir
-        self.input_root = input_root
-        self.enlarge_thresholds = enlarge_thresholds
-        self.enlarge_percent = enlarge_percent
-        self.min_save_size = min_save_size
-        self.save_types = self._parse_save_types(save_types)
-        os.makedirs(output_dir, exist_ok=True)
+        # Member variables with m_ prefix
+        self.m_output_dir = output_dir
+        self.m_input_root = input_root
+        self.m_enlarge_thresholds = enlarge_thresholds
+        self.m_enlarge_percent = enlarge_percent
+        self.m_min_save_size = min_save_size
+        self.m_save_types = self._parse_save_types(save_types)
+        os.makedirs(self.m_output_dir, exist_ok=True)
 
     def _parse_save_types(self, save_types: List[str]) -> Set[str]:
         """Validate and normalize save types input"""
         if 'all' in save_types:
             return {'isolated', 'contour', 'crop', 'enlarged-crop'}
         valid_types = {'isolated', 'contour', 'crop', 'enlarged-crop'}
-        return {t for t in save_types if t in valid_types}
+        userSaveTypes = {t for t in save_types if t in valid_types}
+        logging.info(f"Save types: {userSaveTypes}")
+        return userSaveTypes
 
-    # Add context manager for resource handling
+    # Context manager methods
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        pass  # Add cleanup logic if needed
+        pass
 
     def _save_all_versions(self, img, contour, output_base):
         """Save selected image types based on configuration"""
@@ -118,9 +116,6 @@ class ImageSegmenter:
             self._save_basic_crop(img, contour, output_base)
         if 'enlarged-crop' in self.m_save_types:
             self._save_enlarged_crop(img, contour, output_base)
-
-    # Remove duplicate _save_all_versions at line 142-147
-    # This older version unconditionally saved all variants without checks
 
     def process_batch(self, results):
         """Process a batch of YOLO detection results"""
@@ -199,6 +194,47 @@ class ImageSegmenter:
         base_name = os.path.splitext(os.path.basename(input_path))[0]
         return os.path.join(dest_dir, base_name)
 
+
+
+
+
+def run_processing_pipeline(
+    model_file: str,
+    image_paths: List[str],
+    output_dir: str,
+    enlarge_thresholds: Tuple[int, int],
+    enlarge_percent: int,
+    save_types: List[str],
+    min_save_size: int,
+    input_root: str = None  # Add new parameter
+    ) -> None:
+    """Execute full processing pipeline with batching"""
+    try:
+        logging.info(f"Starting processing pipeline for {len(image_paths)} images , output to {output_dir}")
+        model = YOLO(model_file)
+        if model.task != 'segment':
+            raise ValueError(f"Model {model_file} is not a segmentation model")
+            
+        with ImageSegmenter(output_dir, enlarge_thresholds, enlarge_percent, 
+                           save_types, min_save_size, input_root) as processor:
+            batch_size = 32
+            progress_bar = tqdm(total=len(image_paths), desc="Processing images", unit="img")
+            
+            for i in range(0, len(image_paths), batch_size):
+                batch_paths = image_paths[i:i + batch_size]
+                results = model.predict(batch_paths, verbose=False)
+                processor.process_batch(results)
+                processed = min(i + batch_size, len(image_paths))
+                progress_bar.update(len(batch_paths))
+                logging.info(f"Processed {processed}/{len(image_paths)} images")
+                
+            progress_bar.close()
+                
+    except Exception as e:
+        logging.error(f"Error processing pipeline: {str(e)}", exc_info=True)
+        exit(1)
+
+
 def get_image_paths(args):
     """Handle input sources and return image paths"""
     if args.image_dir:
@@ -241,44 +277,6 @@ def parse_arguments():
     return parser.parse_args()
 
 
-
-
-def run_processing_pipeline(
-    model_file: str,
-    image_paths: List[str],
-    output_dir: str,
-    enlarge_thresholds: Tuple[int, int],
-    enlarge_percent: int,
-    save_types: List[str],
-    min_save_size: int,
-    input_root: str = None  # Add new parameter
-) -> None:
-    """Execute full processing pipeline with batching"""
-    try:
-        logging.info(f"Starting processing pipeline for {len(image_paths)} images , output to {output_dir}")
-        model = YOLO(model_file)
-        if model.task != 'segment':
-            raise ValueError(f"Model {model_file} is not a segmentation model")
-            
-        with ImageSegmenter(output_dir, enlarge_thresholds, enlarge_percent, 
-                           save_types, min_save_size, input_root) as processor:
-            batch_size = 32
-            progress_bar = tqdm(total=len(image_paths), desc="Processing images", unit="img")
-            
-            for i in range(0, len(image_paths), batch_size):
-                batch_paths = image_paths[i:i + batch_size]
-                results = model.predict(batch_paths, verbose=False)
-                processor.process_batch(results)
-                processed = min(i + batch_size, len(image_paths))
-                progress_bar.update(len(batch_paths))
-                logging.info(f"Processed {processed}/{len(image_paths)} images")
-                
-            progress_bar.close()
-                
-    except Exception as e:
-        logging.error(f"Error processing pipeline: {str(e)}", exc_info=True)
-        exit(1)
-
 def main():
     """Main entry point"""
     args = parse_arguments()
@@ -301,133 +299,6 @@ def main():
     run_processing_pipeline(args.model_file, image_paths, args.output_dir,
                           args.enlarge_thresh, args.enlarge_percent, args.save_types,
                           args.min_save_size, input_root=args.image_dir)
-
-class ImageSegmenter:
-    def __init__(self, output_dir: str, enlarge_thresholds: Tuple[int, int], 
-               enlarge_percent: int, save_types: List[str], min_save_size: int,
-               input_root: str = None) -> None:
-        if enlarge_percent < 10 or enlarge_percent > 1000:
-            raise ValueError("Enlarge percentage must be between 10 and 1000")
-        if min_save_size < 16:
-            raise ValueError("Minimum save size must be at least 1 pixel")
-
-        # Member variables with m_ prefix
-        self.m_output_dir = output_dir
-        self.m_input_root = input_root
-        self.m_enlarge_thresholds = enlarge_thresholds
-        self.m_enlarge_percent = enlarge_percent
-        self.m_min_save_size = min_save_size
-        self.m_save_types = self._parse_save_types(save_types)
-        os.makedirs(self.m_output_dir, exist_ok=True)  # Changed to use prefixed var
-
-    def _parse_save_types(self, save_types: List[str]) -> Set[str]:
-        """Validate and normalize save types input"""
-        if 'all' in save_types:
-            return {'isolated', 'contour', 'crop', 'enlarged-crop'}
-        valid_types = {'isolated', 'contour', 'crop', 'enlarged-crop'}
-        userSaveTypes = {t for t in save_types if t in valid_types}
-        logging.info(f"Save types: {userSaveTypes}")
-        return userSaveTypes
-
-    def _get_output_base_Abandon(self, input_path):
-        if self.m_input_root:  # Updated to prefixed var
-            rel_path = os.path.relpath(os.path.dirname(input_path), self.m_input_root)
-            dest_dir = os.path.join(self.m_output_dir, rel_path)  # Updated
-   
-    # Add context manager for resource handling
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        pass  # Add cleanup logic if needed
-
-    def _save_all_versions(self, img, contour, output_base):
-        """Save selected image types based on configuration"""
-        if 'isolated' in self.m_save_types:  # Updated
-            self._save_isolated_image(img, contour, output_base)
-        if 'contour' in self.m_save_types:  # Updated
-            self._save_contour_overlay(img, contour, output_base)
-        if 'crop' in self.m_save_types:  # Updated
-            self._save_basic_crop(img, contour, output_base)
-        if 'enlarged-crop' in self.m_save_types:  # Updated
-            self._save_enlarged_crop(img, contour, output_base)
-
-    def process_batch(self, results):
-        """Process a batch of YOLO detection results"""
-        for result in results:
-            self._process_single_result(result)
-            
-    def _process_single_result(self, result):
-        """Process individual detection result"""
-        img = np.copy(result.orig_img)
-        contour = self._get_contour(result)
-        
-        output_base = self._get_output_base(result.path)
-        self._save_all_versions(img, contour, output_base)
-        
-    def _get_contour(self, result):
-        """Extract and format segmentation contour"""
-        contour = result.masks.xy[0].astype(np.int32).reshape(-1, 1, 2)
-        if contour.size < 3:  # Minimum 3 points for a contour
-            raise ValueError("Invalid contour detected")
-        return contour
-    
-    def _save_isolated_image(self, img, contour, output_base):
-        """Save image with segmentation mask"""
-        mask = np.zeros(img.shape[:2], np.uint8)
-        cv2.drawContours(mask, [contour], -1, 255, cv2.FILLED)
-        cv2.imwrite(f"{output_base}-isolated.png", np.dstack([img, mask]))
-        
-    def _save_contour_overlay(self, img, contour, output_base):
-        """Save image with contour visualization"""
-        viz_img = img.copy()
-        cv2.drawContours(viz_img, [contour], -1, (55, 255, 25), 
-                       thickness=1, lineType=cv2.LINE_AA)
-        cv2.imwrite(f"{output_base}-contour.png", viz_img)
-        
-    def _save_basic_crop(self, img, contour, output_base):
-        """Save direct bounding box crop with size check"""
-        x, y, w, h = cv2.boundingRect(contour)
-        if w < self.m_min_save_size or h < self.m_min_save_size:  # Updated
-            return
-        cv2.imwrite(f"{output_base}-crop.png", img[y:y+h, x:x+w])
-
-    def _save_enlarged_crop(self, img, contour, output_base):
-        """Save enlarged crop with size check"""
-        x, y, w, h = cv2.boundingRect(contour)
-        min_thresh, max_thresh = self.m_enlarge_thresholds  # Updated
-        
-        extend_w = np.clip(int((w * self.m_enlarge_percent)/200),  # Updated
-                          min_thresh, max_thresh)
-        extend_h = np.clip(int((h * self.m_enlarge_percent)/200),  # Updated
-                          min_thresh, max_thresh)
-        
-        # Calculate bounded coordinates
-        new_x = max(0, x - extend_w)
-        new_y = max(0, y - extend_h)
-        new_x_end = min(img.shape[1], x + w + extend_w)
-        new_y_end = min(img.shape[0], y + h + extend_h)
-        
-        new_w = new_x_end - new_x
-        new_h = new_y_end - new_y
-        if new_w < self.m_min_save_size or new_h < self.m_min_save_size:  # Updated
-            return
-            
-        cv2.imwrite(f"{output_base}-enlarged-crop.png", 
-                  img[new_y:new_y_end, new_x:new_x_end])
-    
-    def _get_output_base(self, input_path):
-        """Generate output path preserving input structure"""
-        if self.m_input_root:
-            # Get relative path from input root to image's parent directory
-            rel_path = os.path.relpath(os.path.dirname(input_path), self.m_input_root)
-            dest_dir = os.path.join(self.m_output_dir, rel_path)
-        else:
-            dest_dir = self.m_output_dir
-        
-        os.makedirs(dest_dir, exist_ok=True)
-        base_name = os.path.splitext(os.path.basename(input_path))[0]
-        return os.path.join(dest_dir, base_name)
 
 if __name__ == "__main__":
     main()
