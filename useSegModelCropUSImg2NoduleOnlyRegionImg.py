@@ -110,14 +110,17 @@ class ImageSegmenter:
 
     def _save_all_versions(self, img, contour, output_base):
         """Save selected image types based on configuration"""
-        if 'isolated' in self.save_types:
+        if 'isolated' in self.m_save_types:
             self._save_isolated_image(img, contour, output_base)
-        if 'contour' in self.save_types:
+        if 'contour' in self.m_save_types:
             self._save_contour_overlay(img, contour, output_base)
-        if 'crop' in self.save_types:
+        if 'crop' in self.m_save_types:
             self._save_basic_crop(img, contour, output_base)
-        if 'enlarged-crop' in self.save_types:
+        if 'enlarged-crop' in self.m_save_types:
             self._save_enlarged_crop(img, contour, output_base)
+
+    # Remove duplicate _save_all_versions at line 142-147
+    # This older version unconditionally saved all variants without checks
 
     def process_batch(self, results):
         """Process a batch of YOLO detection results"""
@@ -138,13 +141,6 @@ class ImageSegmenter:
         if contour.size < 3:  # Minimum 3 points for a contour
             raise ValueError("Invalid contour detected")
         return contour
-    
-    def _save_all_versions(self, img, contour, output_base):
-        """Save all required image variants"""
-        self._save_isolated_image(img, contour, output_base)
-        self._save_contour_overlay(img, contour, output_base)
-        self._save_basic_crop(img, contour, output_base)
-        self._save_enlarged_crop(img, contour, output_base)
     
     def _save_isolated_image(self, img, contour, output_base):
         """Save image with segmentation mask"""
@@ -193,12 +189,11 @@ class ImageSegmenter:
     
     def _get_output_base(self, input_path):
         """Generate output path preserving input structure"""
-        if self.input_root:
-            # Get relative path from input root to image's parent directory
-            rel_path = os.path.relpath(os.path.dirname(input_path), self.input_root)
-            dest_dir = os.path.join(self.output_dir, rel_path)
+        if self.m_input_root:
+            rel_path = os.path.relpath(os.path.dirname(input_path), self.m_input_root)
+            dest_dir = os.path.join(self.m_output_dir, rel_path)
         else:
-            dest_dir = self.output_dir
+            dest_dir = self.m_output_dir
         
         os.makedirs(dest_dir, exist_ok=True)
         base_name = os.path.splitext(os.path.basename(input_path))[0]
