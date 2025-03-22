@@ -253,36 +253,31 @@ def run_processing_pipeline(
     enlarge_percent: int,
     save_types: List[str],
     min_save_size: int,
-    input_root: str = None  # Add new parameter
+    input_root: str = None
     ) -> None:
     """Execute full processing pipeline with batching"""
+    batch_size = 32  # Fixed batch size
     try:
         logging.info(f"Starting processing pipeline for {len(image_paths)} images , output to {output_dir}")
         model = YOLO(model_file)
         if model.task != 'segment':
             raise ValueError(f"Model {model_file} is not a segmentation model")
             
-        with ImageSegmenter(
-            output_dir,  # Correct first parameter
-            enlarge_thresholds,
-            enlarge_percent,
-            save_types,
-            min_save_size,
-            input_root=input_root
-        ) as processor:
-            batch_size = 32
+        with ImageSegmenter(output_dir, enlarge_thresholds, enlarge_percent,
+                      save_types, min_save_size, input_root=input_root) as processor:
             progress_bar = tqdm(total=len(image_paths), desc="Processing images", unit="img")
             
             for i in range(0, len(image_paths), batch_size):
                 batch_paths = image_paths[i:i + batch_size]
                 results = model.predict(batch_paths, verbose=False)
                 processor.process_batch(results)
+                # Update progress bar with actual processed count
                 processed = min(i + batch_size, len(image_paths))
-                progress_bar.update(len(batch_paths))
+                progress_bar.update(max(len(batch_paths), len(results)))
                 logging.info(f"Processed {processed}/{len(image_paths)} images")
-                
             progress_bar.close()
-                
+            logging.info(f"Processing complete. Results saved to {processor.m_statis_file}")
+
     except Exception as e:
         logging.error(f"Error processing pipeline: {str(e)}", exc_info=True)
         exit(1)
