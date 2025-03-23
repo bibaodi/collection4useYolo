@@ -18,10 +18,12 @@ datasetHome=r'../datasets/'
 datasetName=r"301pacsDataInLbmfmtRangeY22-24.clsBoM_extend2times"
 datasetName=r"clsBoM_v01_extend2times"
 datasetName=r"clsBoM_v05"
+datasetName=r"clsBoM_v06"
 trainMessage="2cd train to classify Benign Malign model, 8/2 for train/val, delete too small images"
 trainMessage="3rd test on dong5k images only"
 trainMessage="4th with new corrected BoM data singleNodule Part:thyroidNodule4BenMalSingle250322"
 trainMessage="5th with new corrected BoM data multiNodule Part:thyroidNodule4BenMalMulti250322"
+trainMessage="6th with new corrected BoM data single+multi Nodules Part:thyroidNodule4BenMalSingle/Multi250322"
 
 datasetf=datasetHome+datasetName
 
