@@ -11,7 +11,7 @@ echo "use:"
 echo "aws s3 cp ./thyroidNodule4BenMalMulti250322.zip s3://ftp-huaxia-200420/usData-FormalRelease/10lastVersion-LocalAll/Thyroid/301PX/"
 echo "if you want send to 301PX"
 
-sendThyDataSetToS3 "$1";
+sendModelZipToS3 "$1";
 
 echo "Done."
 
