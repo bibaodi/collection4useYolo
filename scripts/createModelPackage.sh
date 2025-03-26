@@ -28,7 +28,7 @@ function cpTrainMetrics(){
 	
 	local DST="trainMetricsResults"
 	mkdir -p ./${DST}
-	local files="args.yaml results.csv results.png *_batch*.*"
+	local files="confusion_matrix* args.yaml results.csv results.png *_batch*.*"
 	for ifile in ${files[@]}; do
 		#echo "Debug:will copy ${ifile}"
 		cp ${SRC}/${ifile} ./${DST}/

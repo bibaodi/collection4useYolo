@@ -27,6 +27,7 @@ trainMessage="6th with new corrected BoM data single+multi Nodules Part:thyroidN
 trainMessage="7th filter tirads 4/5 and use bethesda 2 as benign 6 as malign"
 trainMessage="8th make train data 50-50 by delete 15k malign items , based on filter tirads 4/5 and use bethesda 2 as benign 6 as malign"
 trainMessage="9th make train data 50-50 by add 15k benign items from SingleNodule, based on filter tirads 4/5 and use bethesda 2 as benign 6 as malign"
+trainMessage="10th make train&val data 50-50 by add 15k/2.5k benign items from SingleNodule, based on filter tirads 4/5 and use bethesda 2 as benign 6 as malign"
 
 datasetf=datasetHome+datasetName
 
