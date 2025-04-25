@@ -18,7 +18,7 @@ datasetHome=r'../datasets/'
 datasetName=r"301pacsDataInLbmfmtRangeY22-24.clsBoM_extend2times"
 datasetName=r"clsBoM_v01_extend2times"
 datasetName=r"clsBoM_v05"
-datasetName=r"clsBoM_v07plus"
+datasetName=r"clsEchoGenicity_v01"
 trainMessage="2cd train to classify Benign Malign model, 8/2 for train/val, delete too small images"
 trainMessage="3rd test on dong5k images only"
 trainMessage="4th with new corrected BoM data singleNodule Part:thyroidNodule4BenMalSingle250322"
@@ -28,7 +28,7 @@ trainMessage="7th filter tirads 4/5 and use bethesda 2 as benign 6 as malign"
 trainMessage="8th make train data 50-50 by delete 15k malign items , based on filter tirads 4/5 and use bethesda 2 as benign 6 as malign"
 trainMessage="9th make train data 50-50 by add 15k benign items from SingleNodule, based on filter tirads 4/5 and use bethesda 2 as benign 6 as malign"
 trainMessage="10th make train&val data 50-50 by add 15k/2.5k benign items from SingleNodule, based on filter tirads 4/5 and use bethesda 2 as benign 6 as malign"
-
+trainMessage="1st time train echo genicity"
 datasetf=datasetHome+datasetName
 
 # Train the model
