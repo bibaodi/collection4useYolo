@@ -11,7 +11,71 @@ import torch.nn.functional as torchnnF
 import ultralytics.utils.ops as ops
 from ultralytics.engine.results import Results
 from ultralytics.utils import ASSETS
+import matplotlib.pyplot as plt
 
+def prune_components(img, min_area_per=0.002, deep_prune=True):
+    """
+    Post processing step to prune away small patches and ouput a convex
+    hull of (at most) the two largest patches
+
+    Args:
+        img (np.ndarray): nrow x ncol x nchan thresholded input mask
+        min_area_per (float): Minimum area percentage (i.e. patch area / image area) to be kept
+        deep_prune : False - only reomve area smaller than min_area
+
+    Returns:
+        np.ndarray: Output mask
+    """
+    # get contours from image
+    contours, hierarchy = cv2.findContours(
+                img, cv2.RETR_TREE,
+                cv2.CHAIN_APPROX_SIMPLE)
+    outimg = np.zeros(img.shape, dtype=np.uint8)
+    outimg = cv2.drawContours(outimg, contours, -1, 128, 3)
+    cv2.imwrite(f"/tmp/res-prune-contours-all.png", outimg)
+    
+    min_area = img.size * min_area_per
+    # sort contours by area
+    areas = np.array([cv2.contourArea(c) for c in contours])
+    print(f"debug: areas={areas}")
+    sortedAreaIdx = np.argsort(areas)
+    #areas = areas[sortedAreaIdx]
+    sorted_contours = []
+    # get rid of small contours
+    for icontourIdx in sortedAreaIdx:
+        if areas[icontourIdx]> min_area:
+            sorted_contours.append(contours[icontourIdx])
+            print(f"debug: areas[icontourIdx]={areas[icontourIdx]}, min_area={min_area}")
+            newmaskimg = np.zeros(img.shape, dtype=np.uint8)
+            cv2.drawContours(newmaskimg, [contours[icontourIdx]], -1, 253, -1)
+            cv2.imwrite(f"/tmp/resnewmaskimg-prune-{icontourIdx}.png", newmaskimg)
+    return newmaskimg
+
+def scale_masks(masks, shape, padding=True):
+    """
+    Rescale segment masks to shape.
+
+    Args:
+        masks (torch.Tensor): (N, C, H, W).
+        shape (tuple): Height and width.
+        padding (bool): If True, assuming the boxes is based on image augmented by yolo style. If False then do regular
+            rescaling.
+
+    Returns:
+        (torch.Tensor): Rescaled masks.
+    """
+    mh, mw = masks.shape[2:]
+    gain = min(mh / shape[0], mw / shape[1])  # gain  = old / new
+    pad = [mw - shape[1] * gain, mh - shape[0] * gain]  # wh padding
+    if padding:
+        pad[0] /= 2
+        pad[1] /= 2
+    top, left = (int(pad[1]), int(pad[0])) if padding else (0, 0)  # y, x
+    bottom, right = (int(mh - pad[1]), int(mw - pad[0]))
+    masks = masks[..., top:bottom, left:right]
+
+    masks = torchnnF.interpolate(masks, shape, mode="bilinear", align_corners=False)  # NCHW
+    return masks
 def crop_mask(masks, boxes):
     """
     Crop masks to bounding boxes.
@@ -26,12 +90,42 @@ def crop_mask(masks, boxes):
     _, h, w = masks.shape
     x1, y1, x2, y2 = torch.chunk(boxes[:, :, None], 4, 1)  # x1 shape(n,1,1)
     print(f"debug: masks.shape={masks.shape}, boxes.shape={boxes.shape}, boxes={boxes}, x1={x1}, y1={y1}, x2={x2}, y2={y2}\n w={w}, h={h}")
+    for ii, imask in enumerate(masks):
+        print(f"debug: imask.shape={imask.shape}")
+        maskInnumpy = imask.cpu().numpy()
+        max_value = np.max(maskInnumpy)
+        min_value = np.min(maskInnumpy)
+        print(f"Maximum value: {max_value},Minimum value: {min_value}")
+        thresh = 0.8*(max_value + min_value)
+        maskInnumpy = (maskInnumpy > thresh).astype(np.uint8)
+        
+        maskInnumpy = prune_components(maskInnumpy, min_area_per=0.002, deep_prune=True)
+        contours, hierarchy = cv2.findContours(
+            (maskInnumpy > thresh).astype(np.uint8), cv2.RETR_TREE,
+            cv2.CHAIN_APPROX_SIMPLE)
+        print(f"debug: contours={type(contours)}, len(contours)={len(contours)}, contours[0].type={type(contours[0])}, contours[0].shape={contours[0].shape}")
+        cv2.imwrite(f"/tmp/resmask{ii}.png", maskInnumpy*255 )
+        outimg = cv2.cvtColor(maskInnumpy, cv2.COLOR_GRAY2BGR)
+        outimg = cv2.drawContours(outimg, contours, -1, (0, 255, 0), 3)
+        cv2.imwrite(f"/tmp/resmask{ii}-contours.png", outimg)
+        # Flatten the array
+        flattened_array = maskInnumpy.flatten().clip(0, 1)
+        # Plot the histogram
+        plt.hist(flattened_array, bins=10, alpha=0.7, color='blue')
+        plt.title('Value Distribution in 2D Array')
+        plt.xlabel('Value')
+        plt.ylabel('Frequency')
+
+        # Save the plot as an image
+        plt.savefig('/tmp/value_distribution.png')
+        plt.close()
     boxW= x2 - x1
     boxH= y2 - y1
-    x1 = x1 - boxW // 2
-    y1 = y1 - boxH // 2
-    x2 = x2 + boxW // 2
-    y2 = y2 + boxH // 2
+    extendRatio = 0.4
+    x1 = x1 - boxW * extendRatio
+    y1 = y1 - boxH * extendRatio
+    x2 = x2 + boxW * extendRatio
+    y2 = y2 + boxH * extendRatio
     x1 = torch.clamp(x1, 0, w)
     y1 = torch.clamp(y1, 0, h)
     x2 = torch.clamp(x2, 0, w)
@@ -114,12 +208,21 @@ class YOLOSeg:
             if torch.cuda.is_available()
             else ["CPUExecutionProvider"],
         )
+        inputs = self.session.get_inputs()
+        for iIn in inputs:
+            print(f"inputs:{iIn}")
+        outputs = self.session.get_outputs()
+        for iIn in outputs:
+            print(f"outputs:{iIn}")
 
         self.imgsz = (imgsz, imgsz) if isinstance(imgsz, int) else imgsz
         self.conf = conf
         self.iou = iou
 
     def __call__(self, img):
+        return self.predict(img)
+
+    def predict(self, img):
         """
         Run inference on the input image using the ONNX model.
 
@@ -196,10 +299,11 @@ class YOLOSeg:
         print(f"debug: {type(preds)}preds.shape={preds.shape}, protos.shape={protos.shape}")
         model_names={0: 'thyNodu'} 
         preds = ops.non_max_suppression(preds, self.conf, self.iou, None, False, max_det=3000, nc=len(model_names), end2end=False, return_idxs=False)
-
+        print(f"debug: after apply nms: {type(preds)},{len(preds)},preds0.shape={preds[0].shape}, protos.shape={protos.shape}")
         results = []
         for i, pred in enumerate(preds):
-            pred[:, :4] = ops.scale_boxes(prep_img.shape[2:], pred[:, :4], img.shape)
+            pred[:, :4] = ops.scale_boxes(prep_img.shape[2:], pred[:, :4], img.shape)#0-3:wxywh,4:conf,5:cls;
+            print(f"debug: pred.shape={pred.shape},pred[:5]={pred[:, :5]},0-3:wxywh,4:conf,5:cls")
             #masks = process_mask(protos[i], pred[:, 6:], pred[:, :4], img.shape[:2])
             masks = self.process_mask(protos[i], pred[:, 6:], pred[:, :4], img.shape[:2])
             results.append(Results(img, path="", names={'nodu':"Nodule"}, boxes=pred[:, :6], masks=masks), )
@@ -220,8 +324,10 @@ class YOLOSeg:
             (torch.Tensor): Binary segmentation masks with shape (n, height, width).
         """
         c, mh, mw = protos.shape  # CHW
+        print(f"debug: protos.shape={protos.shape}, masks_in.shape={masks_in.shape}")
         masks = (masks_in @ protos.float().view(c, -1)).view(-1, mh, mw)  # Matrix multiplication
-        masks = ops.scale_masks(masks[None], shape)[0]  # Scale masks to original image size
+        masks = scale_masks(masks[None], shape)[0]  # Scale masks to original image size
+        print(f"debug: after scale mask: masks.shape={masks.shape}, bboxes={bboxes}")
         masks = crop_mask(masks, bboxes)  # Crop masks to bounding boxes
         return masks.gt_(0.0)  # Convert to binary masks
 
@@ -236,7 +342,7 @@ if __name__ == "__main__":
 
     model = YOLOSeg(args.model, args.conf, args.iou)
     img = cv2.imread(args.source)
-    results = model(img)
+    results = model.predict(img)
 
 # Process results list
 for result in results:
