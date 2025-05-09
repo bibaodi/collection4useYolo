@@ -2,9 +2,11 @@ from ultralytics import YOLO
 import cv2
 import numpy as np
 
-modelfile=r'runs/segment/train9/weights/best.pt'
+modelfile=r'runs/segment/train9/weights/best.onnx'
 # Load a pretrained YOLO model (recommended for training)
 model = YOLO(modelfile)
+print("model.args:", model)
+
 
 
 # Validate the model
