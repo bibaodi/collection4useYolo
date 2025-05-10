@@ -1,5 +1,5 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
-
+# eton@250510 v1.0 make output of yolo-segmentation model not cut by box and model both support work with onnxruntime and torch.
 import argparse
 
 import cv2, os, sys
@@ -65,10 +65,10 @@ def filter_mask_in_boxes(masks, boxes):
         print(f"debug: masks.shape={masks.shape}, boxes.shape={boxes.shape}, boxes={boxes}, x1={x1}, y1={y1}, x2={x2}, y2={y2}\n w={w}, h={h}")
     
     for ii, imask in enumerate(masks):
-        boxxyxy = boxes[ii]
-        print(f"debug: imask.shape={imask.shape}, boxxyxy={boxxyxy}")
         maskInnumpy = imask.cpu().numpy()
         if debug_code:
+            boxxyxy = boxes[ii]
+            print(f"debug: imask.shape={imask.shape}, boxxyxy={boxxyxy}")
             max_value = np.max(maskInnumpy)
             min_value = np.min(maskInnumpy)
             print(f"Maximum value: {max_value},Minimum value: {min_value}")
@@ -191,8 +191,9 @@ class YOLOSeg:
                 inputImgs = torch.from_numpy(prep_img).to(self.model.device)
                 preds = self.model(inputImgs)
                 outs = preds
-                print(f"debug: torch preds: {type(preds)}, len={len(preds)},{preds[0].shape},")
-            #os._exit(0)
+                if debug_code:
+                    print(f"debug: torch preds: {type(preds)}, len={len(preds)},{preds[0].shape},")
+
         elif isinstance(self.session, ort.InferenceSession):
             # For ONNX Runtime model
             outs = self.session.run(None, {self.session.get_inputs()[0].name: prep_img})
@@ -282,7 +283,8 @@ class YOLOSeg:
         protos = outs[1][-1] if isinstance(outs[1], tuple) else outs[1]
         preds = outs[0] 
         preds, protos = [torch.from_numpy(p) if isinstance(p, np.ndarray) else p for p in (preds, protos)]
-        print(f"debug: preds+protos:{type(preds)}preds.shape={preds.shape}, protos.type={type(protos)}")
+        if debug_code:
+            print(f"debug: preds+protos:{type(preds)}preds.shape={preds.shape}, protos.type={type(protos)}")
         model_names={0: 'thyNodu'} 
         preds = ops.non_max_suppression(preds, self.conf, self.iou, None, False, max_det=3000, nc=len(model_names), end2end=False, return_idxs=False)
         #print(f"debug: after apply nms: {type(preds)},{len(preds)},preds0.shape={preds[0].shape}, protos.shape={protos.shape}")
@@ -310,23 +312,24 @@ if __name__ == "__main__":
     img = cv2.imread(args.source)
     results = model.predict(img)
 
-# Process results list
-for result in results:
-    boxes = result.boxes  # Boxes object for bounding box outputs
-    masks = result.masks  # Masks object for segmentation masks outputs
-    keypoints = result.keypoints  # Keypoints object for pose outputs
-    probs = result.probs  # Probs object for classification outputs
-    obb = result.obb  # Oriented boxes object for OBB outputs
-    #result.show()  # display to screen
-    #result.save(filename="/tmp/result-nocut.jpg")  # save to disk
+    # Process results list
+    for result in results:
+        boxes = result.boxes  # Boxes object for bounding box outputs
+        masks = result.masks  # Masks object for segmentation masks outputs
+        keypoints = result.keypoints  # Keypoints object for pose outputs
+        probs = result.probs  # Probs object for classification outputs
+        obb = result.obb  # Oriented boxes object for OBB outputs
+        #result.show()  # display to screen
+        #result.save(filename="/tmp/result-nocut.jpg")  # save to disk
 
-    img = np.copy(result.orig_img)
-    b_mask = np.zeros(img.shape[:2], np.uint8)
-    #print(f"debug: {type(masks.xy)}, len={len(masks.xy)}, masks={masks}") if len(masks.xy) <= 0 else print("a lot masks found")
-    contour = masks.xy[0].astype(np.int32).reshape(-1, 1, 2)
-    cv2.drawContours(b_mask, [contour], -1, (255, 255, 255), cv2.FILLED)
-    isolated = np.dstack([img, b_mask])
-    cv2.imwrite("/tmp/resnocut-isolated.png", isolated)
-    lineThickness=1
-    cv2.drawContours(img, [contour], -1, (55, 255, 25),thickness=lineThickness,lineType=cv2.LINE_AA )#color:BGR, 
-    cv2.imwrite("/tmp/resnocut-contour.png", img)
+        img = np.copy(result.orig_img)
+        b_mask = np.zeros(img.shape[:2], np.uint8)
+        #print(f"debug: {type(masks.xy)}, len={len(masks.xy)}, masks={masks}") if len(masks.xy) <= 0 else print("a lot masks found")
+        contour = masks.xy[0].astype(np.int32).reshape(-1, 1, 2)
+        cv2.drawContours(b_mask, [contour], -1, (255, 255, 255), cv2.FILLED)
+        isolated = np.dstack([img, b_mask])
+        cv2.imwrite("/tmp/resnocut-isolated.png", isolated)
+        lineThickness=1
+        cv2.drawContours(img, [contour], -1, (55, 255, 25),thickness=lineThickness,lineType=cv2.LINE_AA )#color:BGR, 
+        cv2.imwrite("/tmp/resnocut-contour.png", img)
+        print(f"inference done, saved to /tmp/resnocut-isolated.png and /tmp/resnocut-contour.png")
