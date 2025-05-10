@@ -2,7 +2,7 @@
 
 import argparse
 
-import cv2
+import cv2, os, sys
 import numpy as np
 import onnxruntime as ort
 import torch
@@ -11,6 +11,8 @@ import torch.nn.functional as torchnnF
 import ultralytics.utils.ops as ops
 from ultralytics.engine.results import Results
 from ultralytics.utils import ASSETS
+from ultralytics.engine.predictor import BasePredictor as YOLO_Predictor
+from ultralytics import YOLO as YOLO_PT
 import matplotlib.pyplot as plt
 
 debug_code = False
@@ -56,7 +58,7 @@ def filter_mask_in_boxes(masks, boxes):
     r = torch.arange(w, device=masks.device, dtype=x1.dtype)[None, None, :]  # rows shape(1,1,w)
     c = torch.arange(h, device=masks.device, dtype=x1.dtype)[None, :, None]  # cols shape(1,h,1)
     box_mask = (r >= x1) * (r < x2) * (c >= y1) * (c < y2)  # box_mask shape(n,h,w)
-    box_mask0InNumpy = box_mask[0].numpy().astype(np.uint8)
+    box_mask0InNumpy = box_mask[0].cpu().numpy().astype(np.uint8)
     if debug_code:
         print(f"debug: box_mask.shape={box_mask.shape}")
         cv2.imwrite(f"/tmp/boxmask.png", (box_mask[0].detach().cpu().numpy() * 255).astype(np.uint8)) 
@@ -139,19 +141,30 @@ class YOLOSeg:
                 for rectangular input.
         """
         self.argtask = "segment"
-        print("debug onnx provider:", ort.__version__, ort.get_device() )
-        self.session = ort.InferenceSession(
-            onnx_model,
-            providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
-            if torch.cuda.is_available()
-            else ["CPUExecutionProvider"],
-        )
-        inputs = self.session.get_inputs()
-        for iIn in inputs:
-            print(f"inputs:{iIn}")
-        outputs = self.session.get_outputs()
-        for iIn in outputs:
-            print(f"outputs:{iIn}")
+        if onnx_model.endswith(".onnx"):
+            print("debug onnx provider:", ort.__version__, ort.get_device())
+            self.session = ort.InferenceSession(
+                onnx_model,
+                providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
+                if torch.cuda.is_available()
+                else ["CPUExecutionProvider"],
+            )
+            inputs = self.session.get_inputs()
+            for iIn in inputs:
+                print(f"inputs:{iIn}")
+            outputs = self.session.get_outputs()
+            for iIn in outputs:
+                print(f"outputs:{iIn}")
+        else:
+            # Initialize PyTorch model and predictor
+            cuda = torch.cuda.is_available()
+            ckpt = torch.load(onnx_model,map_location="cpu") # YOLO_PT(onnx_model)
+            device = torch.device("cuda:0" if cuda else "cpu")
+            
+            self.model = (ckpt.get("ema") or ckpt["model"]).to(device).float()  # FP32 model 
+            self.model.eval()
+            self.model.device = device
+            self.session =None
 
         self.imgsz = (imgsz, imgsz) if isinstance(imgsz, int) else imgsz
         self.conf = conf
@@ -172,7 +185,19 @@ class YOLOSeg:
                 segmentation masks.
         """
         prep_img = self.preprocess(img, self.imgsz)
-        outs = self.session.run(None, {self.session.get_inputs()[0].name: prep_img})
+        if self.session is None:
+            # For YOLO PyTorch model
+            with torch.no_grad():
+                inputImgs = torch.from_numpy(prep_img).to(self.model.device)
+                preds = self.model(inputImgs)
+                outs = preds
+                print(f"debug: torch preds: {type(preds)}, len={len(preds)},{preds[0].shape},")
+            #os._exit(0)
+        elif isinstance(self.session, ort.InferenceSession):
+            # For ONNX Runtime model
+            outs = self.session.run(None, {self.session.get_inputs()[0].name: prep_img})
+        else:
+            raise ValueError("Unsupported session type.")
         return self.postprocess(img, prep_img, outs)
 
     def letterbox(self, img, new_shape=(640, 640)):
@@ -253,9 +278,11 @@ class YOLOSeg:
         Returns:
             (List[Results]): Processed detection results containing bounding boxes and segmentation masks.
         """
-        
-        preds, protos = [torch.from_numpy(p) for p in outs]
-        #print(f"debug: {type(preds)}preds.shape={preds.shape}, protos.shape={protos.shape}")
+        # Extract protos - tuple if PyTorch model or array if exported
+        protos = outs[1][-1] if isinstance(outs[1], tuple) else outs[1]
+        preds = outs[0] 
+        preds, protos = [torch.from_numpy(p) if isinstance(p, np.ndarray) else p for p in (preds, protos)]
+        print(f"debug: preds+protos:{type(preds)}preds.shape={preds.shape}, protos.type={type(protos)}")
         model_names={0: 'thyNodu'} 
         preds = ops.non_max_suppression(preds, self.conf, self.iou, None, False, max_det=3000, nc=len(model_names), end2end=False, return_idxs=False)
         #print(f"debug: after apply nms: {type(preds)},{len(preds)},preds0.shape={preds[0].shape}, protos.shape={protos.shape}")
