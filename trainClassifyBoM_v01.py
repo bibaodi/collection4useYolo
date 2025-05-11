@@ -18,7 +18,7 @@ datasetHome=r'../datasets/'
 datasetName=r"301pacsDataInLbmfmtRangeY22-24.clsBoM_extend2times"
 datasetName=r"clsBoM_v01_extend2times"
 datasetName=r"clsBoM_v05"
-datasetName=r"clsBoM_v07plus"
+datasetName=r"clsGlandPos_v01"
 trainMessage="2cd train to classify Benign Malign model, 8/2 for train/val, delete too small images"
 trainMessage="3rd test on dong5k images only"
 trainMessage="4th with new corrected BoM data singleNodule Part:thyroidNodule4BenMalSingle250322"
@@ -28,12 +28,15 @@ trainMessage="7th filter tirads 4/5 and use bethesda 2 as benign 6 as malign"
 trainMessage="8th make train data 50-50 by delete 15k malign items , based on filter tirads 4/5 and use bethesda 2 as benign 6 as malign"
 trainMessage="9th make train data 50-50 by add 15k benign items from SingleNodule, based on filter tirads 4/5 and use bethesda 2 as benign 6 as malign"
 trainMessage="10th make train&val data 50-50 by add 15k/2.5k benign items from SingleNodule, based on filter tirads 4/5 and use bethesda 2 as benign 6 as malign"
-
+trainMessage='1st train echo composition 0SOLID  1CYSOL, other classes samples not enough'
+trainMessage='1st train echo Nodule Margins'
+trainMessage='1st train echo foci'
+trainMessage='1st train gland position'
 datasetf=datasetHome+datasetName
 
 # Train the model
 #results = model.train(data="mnist", epochs=10, imgsz=32)
-results = model.train(data=datasetf, epochs=90, imgsz=96, erasing=0.07)#96
+results = model.train(data=datasetf, epochs=90, imgsz=640, erasing=0.07)#96
 
 # Validate the model
 metrics = model.val()  # no arguments needed, dataset and settings remembered
