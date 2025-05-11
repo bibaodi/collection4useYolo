@@ -36,7 +36,7 @@ datasetf=datasetHome+datasetName
 
 # Train the model
 #results = model.train(data="mnist", epochs=10, imgsz=32)
-results = model.train(data=datasetf, epochs=90, imgsz=640, erasing=0.07)#96
+results = model.train(data=datasetf, epochs=30, imgsz=96, erasing=0.4)#96
 
 # Validate the model
 metrics = model.val()  # no arguments needed, dataset and settings remembered
