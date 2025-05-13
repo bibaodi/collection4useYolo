@@ -6,6 +6,7 @@ from typing import List, Tuple
 import cv2
 import numpy as np
 from ultralytics import YOLO
+from ultralytics.models.yolo.classify import ClassificationPredictor as YOLOClassify
 from tqdm import tqdm
 
 class YOLOClassifier:
@@ -13,7 +14,7 @@ class YOLOClassifier:
     
     def __init__(self, model_path: str, image_folder: str, output_csv: str, file_path_style: str = "full"):
         self.m_logger = logging.getLogger(self.__class__.__name__)
-        self.m_model = YOLO(model_path)
+        self.m_model = YOLO(model_path,'classify', True) # Add verbose=False here to suppress model loading messages
         self.m_image_folder = Path(image_folder)
         self.m_output_csv = Path(output_csv)
         self.m_file_path_style = file_path_style
@@ -45,7 +46,7 @@ class YOLOClassifier:
         if img is None:
             raise ValueError(f"Invalid image file: {img_path}")
             
-        results = self.m_model(img)
+        results = self.m_model.predict(img, verbose=False) # Add verbose=False here to suppress model predict messages
         top1 = results[0].probs.top1
         return results[0].names[top1], results[0].probs.top1conf.item()
 
