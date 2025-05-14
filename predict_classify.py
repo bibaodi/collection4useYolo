@@ -1,3 +1,4 @@
+import os, sys
 import argparse
 import logging
 import csv
@@ -8,6 +9,7 @@ import numpy as np
 from ultralytics import YOLO
 from ultralytics.models.yolo.classify import ClassificationPredictor as YOLOClassify
 from tqdm import tqdm
+from datetime import datetime
 
 class YOLOClassifier:
     """YOLO image classifier with CSV output capability"""
@@ -20,12 +22,29 @@ class YOLOClassifier:
         self.m_file_path_style = file_path_style
         self.m_logger.debug(f"Initialized classifier with model: {model_path}")
 
+
+    def _get_image_paths(self) -> List[Path]:
+        """Get image paths recursively up to 7 levels deep"""
+        image_exts = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp'}
+        image_paths = []
+        
+        for path in self.m_image_folder.rglob('*.*'):
+            if path.suffix.lower() in image_exts:
+                try:
+                    relative_depth = len(path.relative_to(self.m_image_folder).parts) - 1
+                    if relative_depth <= 7:
+                        image_paths.append(path)
+                except ValueError:
+                    continue  # Skip paths outside our base directory
+        return image_paths
+    
     def predict_images(self) -> None:
         """Process all images in the folder and write results to CSV"""
         if not self.m_image_folder.is_dir():
             raise FileNotFoundError(f"Image folder not found: {self.m_image_folder}")
 
-        image_paths = list(self.m_image_folder.glob("*.*"))
+        image_paths = self._get_image_paths()
+        self.m_logger.debug(f"Found {len(image_paths)} images in {self.m_image_folder}")
         if not image_paths:
             raise FileNotFoundError(f"No images found in {self.m_image_folder}")
 
@@ -72,21 +91,41 @@ class YOLOClassifier:
                 })
         self.m_logger.info(f"Saved results to {self.m_output_csv}")
 
-def main():
-    """Main entry point for command line execution"""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
+
+def configure_logging():
+    """Configure logging with timestamped filename"""
+    app_name = Path(__file__).stem
+    datetime_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_filename = f"{app_name}_{datetime_str}.log"
     
+    # Create separate handlers for console and file
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.WARNING)
+    
+    file_handler = logging.FileHandler(log_filename)
+    file_handler.setLevel(logging.DEBUG)
+    
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s - %(name)s:%(lineno)d - %(levelname)s - %(message)s",
+        handlers=[console_handler, file_handler]
+    )
+
+def configure_arguments():
+    """Parse and return command line arguments"""
     parser = argparse.ArgumentParser(description="YOLO Image Classifier")
     parser.add_argument("--model", required=True, help="Path to YOLO model file")
     parser.add_argument("--images", required=True, help="Path to images folder")
     parser.add_argument("--output", required=True, help="Output CSV file path")
     parser.add_argument("--path-style", choices=["full", "basename", "stem"], default="stem",
                         help="Format for image paths in CSV: full path, basename, or stem")
-    
-    args = parser.parse_args()
+    return parser
+
+def main():
+    """Main entry point for command line execution"""
+    configure_logging()
+    argparser = configure_arguments()
+    args = argparser.parse_args()
 
     try:
         classifier = YOLOClassifier(args.model, args.images, args.output, args.path_style)
