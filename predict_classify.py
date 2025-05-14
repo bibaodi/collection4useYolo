@@ -20,7 +20,7 @@ class YOLOClassifier:
         self.m_image_folder = Path(image_folder)
         self.m_output_csv = Path(output_csv)
         self.m_file_path_style = file_path_style
-        self.m_logger.debug(f"Initialized classifier with model: {model_path}")
+        self.m_logger.debug(f"Initialized classifier on {self.m_model.device} with model: {model_path}")
 
 
     def _get_image_paths(self) -> List[Path]:
