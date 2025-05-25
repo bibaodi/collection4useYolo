@@ -60,7 +60,7 @@ def main():
 
     args = parser.parse_args()
 
-    log_file = Path(args.output_path) / 'split_dataset.log'
+    log_file = Path(args.input_path) / 'split_dataset.log'
     setup_logging(log_file)
 
     split_dataset(args.input_path, args.split_ratio, args.output_path)
