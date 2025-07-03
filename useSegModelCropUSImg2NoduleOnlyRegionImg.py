@@ -326,13 +326,13 @@ def collect_images_from_dir(image_dir):
 def parse_arguments():
     """Configure and parse command-line arguments"""
     parser = argparse.ArgumentParser(description="Segment nodules in ultrasound images")
-    parser.add_argument("-m", "--model_file", default="runs/segment/train9/weights/best.pt",
-                      help="Path to trained model weights")
+    parser.add_argument("-m", "--model_file", required=True, default="runs/segment/train9/weights/best.pt",
+                      help="Path to trained segmentation Yolo model weights")
     parser.add_argument("-i", "--image_path", nargs='+', 
                       help="Path(s) to input image(s) for processing")
-    parser.add_argument("-d", "--image_dir",
+    parser.add_argument("-d", "--image_dir", required=True,
                       help="Directory containing images to process")
-    parser.add_argument("-o", "--output_dir", default="/tmp",
+    parser.add_argument("-o", "--output_dir", default="/tmp",required=True,
                       help="Output directory for processed images")
     parser.add_argument("--enlarge-thresh", nargs=2, type=int, default=[32, 320],
                       metavar=("MIN", "MAX"), 
