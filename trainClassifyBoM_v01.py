@@ -5,10 +5,10 @@ import pathlib
 # - eton@250215 change dataset home from absolute to relative;
 
 # Create a new YOLO model from scratch
-#model = YOLO("yolo11n.yaml")
-
+model = YOLO("yolo11n-cls.yaml")
+model = YOLO("runs/classify/train31/weights/best.pt")
 # Load a pretrained YOLO model (recommended for training)
-model = YOLO("thynoduClsBoM.pt")  # load a pretrained model (recommended for training)
+#model = YOLO("thynoduClsBoM.pt")  # load a pretrained model (recommended for training)
 #model = YOLO("yolo11-cls-resnet18.yaml")  # load modeli yolo11-cls-resnet18.yaml from yaml 
 #model = YOLO("yolo11m-cls.pt")  # load maxs pretrained model
 
@@ -19,6 +19,7 @@ datasetName=r"301pacsDataInLbmfmtRangeY22-24.clsBoM_extend2times"
 datasetName=r"clsBoM_v01_extend2times"
 datasetName=r"clsBoM_v05"
 datasetName=r"clsGlandPos_v01"
+datasetName=r"clsEchogenicity_v02_s01"
 trainMessage="2cd train to classify Benign Malign model, 8/2 for train/val, delete too small images"
 trainMessage="3rd test on dong5k images only"
 trainMessage="4th with new corrected BoM data singleNodule Part:thyroidNodule4BenMalSingle250322"
@@ -36,14 +37,15 @@ datasetf=datasetHome+datasetName
 
 # Train the model
 #results = model.train(data="mnist", epochs=10, imgsz=32)
-results = model.train(data=datasetf, epochs=30, imgsz=96, erasing=0.4)#96
+results = model.train(data=datasetf, epochs=90, imgsz=96, erasing=0.2)#96
 
 # Validate the model
 metrics = model.val()  # no arguments needed, dataset and settings remembered
 metrics.top1  # top1 accuracy
 
 # Export the model to ONNX format
-success = model.export(format="onnx")
+success=42
+#success = model.export(format="onnx")
 # Perform object detection on an image using the model
 #results = model("https://ultralytics.com/images/bus.jpg")
 tobeTestImg=r'../datasets/42-minibatch/thynodu-t03.jpg'
