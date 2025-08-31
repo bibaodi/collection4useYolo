@@ -10,7 +10,7 @@ model = YOLO("yolo11n-seg.pt")
 #results = model.train(data="thyNoduSeg.yaml", epochs=1, imgsz=640)
 #results = model.train(data="../datasets/segThyGland_v02.yaml", epochs=30, imgsz=224)
 
-results = model.train(data="../datasets/segThyNodunGland_v01.yaml", epochs=3, imgsz=224)
+results = model.train(data="../datasets/segThyNodunGland_v01.yaml", epochs=60, imgsz=224)
 # Validate the model
 metrics = model.val()  # no arguments needed, dataset and settings remembered
 
