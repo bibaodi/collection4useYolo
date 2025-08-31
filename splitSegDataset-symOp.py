@@ -31,6 +31,8 @@ def split_dataset(input_path, split_ratio, output_path):
     val_labels_dir.mkdir(parents=True, exist_ok=True)
 
     image_files = list(images_dir.glob('*.jpg'))
+    image_pngs = list(images_dir.glob('*.png'))
+    image_files.extend(image_pngs)
     random.shuffle(image_files)
 
     split_index = int(len(image_files) * split_ratio)

@@ -13,7 +13,8 @@ model = YOLO("yolo11n.pt")
 datasetHome=r'/mnt/xin1data/yolo-ultralytics-250101/datasets/'
 datasetName=r'ThyNodu_250215.yaml'
 datasetName=r'detectEsophagus_v01T250810.yaml'
-trainMessage="only detect the esophagus in ThyUS"
+datasetName=r'detectCarotid_v01T250811.yaml'
+trainMessage="only detect the carotid in ThyUS"
 
 datasetf=datasetHome+datasetName
 results = model.train(data=datasetf, epochs=31, imgsz=96)
