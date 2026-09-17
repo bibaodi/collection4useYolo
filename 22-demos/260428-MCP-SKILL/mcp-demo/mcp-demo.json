@@ -1,0 +1,15 @@
+{
+  "servers": {
+    "hello-local": {
+      "type": "stdio",
+      "command": "python3",
+      "args": ["/home/YOURUSER/mcp-demo/hello_local.py"]
+    },
+    "hello-remote": {
+      "type": "http",
+      "url": "http://localhost:8000/mcp"
+      // For real remote: "url": "https://your-domain.example.com/mcp"
+    }
+  }
+}
+
