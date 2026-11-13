@@ -1,0 +1,23 @@
+# Commit log at checkpoint
+
+325de37 Remove remaining superseded script duplicates
+a9cd039 Consolidate thyroid_train01 and task4efficientNet into monorepo
+f266d0f Add test-pair filter tool and run notes
+fc13c12 add claude.md
+a046829 add demos
+7724dc7 add checkImageFormatSuffixMatch, and model_segThy3ObjGlandNoduCarotid
+ead7246 add pathlib
+cd5594f add eval and test
+06c73a1 support train for carotid
+1b0d9fe support train esophagus carotid
+
+# Per-directory tracked file counts
+yolo                     32
+thyroid-data             65
+nodule-classification    39
+scripts                  4
+demos                    66
+docs                     25
+
+# Working tree status
+?? docs/261113-merge-checkpoint/
