@@ -1,12 +1,78 @@
-.vscode/
-.DS_Store
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
 __pycache__/
-*-checkpoint.ipynb
-.venv
-*.egg*
-build/*
-runs/*
-_C.*
-outputs/*
+*.py[cod]
+*$py.class
+*.egg
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+ENV/
+.python-version
+.ipynb_checkpoints/
+
+# ---------------------------------------------------------------------------
+# Editors / OS
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+.spyderproject
+.spyproject
+.ropeproject
+.DS_Store
+*.swp
+.marscode/
+.kiro/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---------------------------------------------------------------------------
+# Build artifacts (C/C++ demos)
+# ---------------------------------------------------------------------------
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.o
+*.so
+*.a
+*.d
+
+# ---------------------------------------------------------------------------
+# Model / training artifacts
+# ---------------------------------------------------------------------------
+runs/
+outputs/
 checkpoints/*.pt
 *.pt
+*.pth
+*.onnx
+*.tflite
+*.pb
+*.npy
+*.zip
+*.mp4
+
+# ---------------------------------------------------------------------------
+# Logs and evaluation dumps
+# ---------------------------------------------------------------------------
+*.log
+inference_results*/
+evalOut_*
+eval_output/
+res_*/
+
+# ---------------------------------------------------------------------------
+# Local-only data (large datasets, result dumps, spreadsheets)
+# ---------------------------------------------------------------------------
+data/*
+!data/README.md
+
+# Legacy dataset / candidate-table locations
+10-datasets/
+21-candidate_table/

@@ -1,0 +1,181 @@
+================================================================================
+V64 甲状腺结节特征CNN模型训练报告
+训练时间: 2025-10-03 20:56:50
+================================================================================
+
+📋 模型配置信息:
+  模型版本: v75
+  模型架构: EfficientNet-B0 多任务版
+  输出目录: models/nodule_feature_cnn_v75
+  训练图像根目录: /Users/Shared/tars/nodule_images
+  验证图像根目录: /Users/Shared/tars/nodule_images/
+  批次大小: 32
+  学习率: 5e-05
+  权重衰减: 0.01
+  早停轮数: 10
+  Dropout率: 0.4
+
+🔍 数据筛选配置:
+  OOF_p_true_threshold: 0.2
+  image_index_threshold: 16
+  排除月份: ['202408', '202409']
+  排除TI-RADS: [6]
+
+⚖️ 损失权重配置:
+  Bom         : 0.9
+  Ti_rads     : 0.05
+  Composition : 0.01
+  Echo        : 0.01
+  Foci        : 0.01
+  Margin      : 0.01
+  Shape       : 0.01
+
+🎯 训练结果概要:
+  总训练轮数: 8
+  最佳验证AUC: 0.9582
+  最佳epoch: 8
+
+🏆 最佳Epoch详细指标:
+  Epoch: 8
+  训练集指标:
+    BOM AUC: 0.9680
+    BOM Accuracy: 0.9111
+    BOM Sensitivity: 0.9259
+    BOM Specificity: 0.8962
+  验证集指标:
+    BOM AUC: 0.9582
+    BOM Accuracy: 0.8946
+    BOM Sensitivity: 0.9049
+    BOM Specificity: 0.8843
+  辅助任务准确率:
+    Ti_rads      - 训练: 0.730, 验证: 0.736
+    Composition  - 训练: 0.855, 验证: 0.861
+    Echo         - 训练: 0.876, 验证: 0.879
+    Foci         - 训练: 0.978, 验证: 0.980
+    Margin       - 训练: 0.832, 验证: 0.841
+    Shape        - 训练: 0.621, 验证: 0.626
+
+🧪 独立验证集最终结果:
+  数据集: data/dataset_sop7/all_verify_sop.csv
+  BOM AUC: 0.8388
+  BOM Accuracy: 0.8020
+  BOM Sensitivity: 0.8527
+  BOM Specificity: 0.6434
+  辅助任务准确率:
+    Ti_rads     : 0.7442
+    Composition : 0.9263
+    Echo        : 0.9328
+    Foci        : 0.9768
+    Margin      : 0.8630
+    Shape       : 0.4652
+
+================================================================================
+📝 完整训练日志:
+================================================================================
+🚀 V64 模型训练启动 (EfficientNet-B0 多任务版)
+🎯 核心目标: OOF_p_true_threshold=0.2, image_index_threshold=16
+🔬 设备: mps
+📁 模型保存目录: models/nodule_feature_cnn_v75
+🖼️ 训练图像根目录: /Users/Shared/tars/nodule_images
+🧪 验证图像根目录: /Users/Shared/tars/nodule_images/
+
+📊 Loading datasets:
+  - Loading training data from: data/dataset_sop7/all_matched_sops_ds_v3_with_tr13_0926_with_OOF_suspect.csv
+    - Successfully loaded with utf-8 encoding.
+    - Found 129479 raw training records.
+  - Loading verification data from: data/dataset_sop7/all_verify_sop.csv
+    - Successfully loaded with utf-8 encoding.
+    - Found 8207 raw verification records.
+
+📈 最終訓練数据统计:
+  总样本数: 121342
+  BOM有效样本: 121342 (100.0%)
+    良性(BOM=0): 60575 (49.9%)
+    恶性(BOM=1): 60767 (50.1%)
+  Ti_rads有效样本: 85727 (70.6%)
+  Composition有效样本: 99333 (81.9%)
+  Echo有效样本: 112848 (93.0%)
+  Foci有效样本: 51636 (42.6%)
+  Margin有效样本: 120554 (99.4%)
+  Shape有效样本: 119855 (98.8%)
+
+🛡️ 按access_no分组划分，避免数据泄露...
+  数据集包含 51203 个不同的access_no
+  训练集access_no: 40962 个
+  验证集access_no: 10241 个
+  ✅ 数据划分成功，无access_no重叠
+
+🔄 最终数据划分:
+  训练集: 97281 样本 (40962 个access_no)
+  验证集: 24061 样本 (10241 个access_no)
+  训练集BOM分布: 良性48573, 恶性48708
+  验证集BOM分布: 良性12002, 恶性12059
+
+🧪 Setting up periodic verification on independent test set...
+  - Using separate verify_root for verification images: /Users/Shared/tars/nodule_images/
+  - Verification will run every 5 epochs on 8207 samples.
+
+🏗️ 模型架构 (EfficientNet-B0 多任务版):
+  总参数: 5.03M
+  可训练参数: 5.03M
+  参数/样本比: 52:1
+
+⚖️ 损失权重配置:
+  - Bom         : 0.9
+  - Ti_rads     : 0.05
+  - Composition : 0.01
+  - Echo        : 0.01
+  - Foci        : 0.01
+  - Margin      : 0.01
+  - Shape       : 0.01
+
+🎯 开始训练 (早停轮数: 10):
+  ✅ 新的最佳模型已保存 (AUC: 0.9396)
+  ✅ 新的最佳模型已保存 (AUC: 0.9488)
+  ✅ 新的最佳模型已保存 (AUC: 0.9523)
+  ✅ 新的最佳模型已保存 (AUC: 0.9557)
+
+--- 🧪 Periodic Verification on Independent Test Set (Epoch 5) ---
+  - AUC: 0.8309, Acc: 0.8156, Sens: 0.8953, Spec: 0.5664
+  ✅ 新的最佳模型已保存 (AUC: 0.9564)
+  ✅ 新的最佳模型已保存 (AUC: 0.9582)
+
+--- 🧪 Periodic Verification on Independent Test Set (Epoch 10) ---
+  - AUC: 0.8359, Acc: 0.7999, Sens: 0.8455, Spec: 0.6574
+
+--- 🧪 Periodic Verification on Independent Test Set (Epoch 15) ---
+  - AUC: 0.8324, Acc: 0.7961, Sens: 0.8355, Spec: 0.6730
+🛑 早停触发 (10轮无改善)!
+
+🎉 V64 训练完成!
+🏆 最佳 BOM AUC: 0.9582
+
+
+--- 最终模型验证 ---
+🚀 对独立验证集进行最终性能评估: data/dataset_sop7/all_verify_sop.csv
+  - Loading best model from: models/nodule_feature_cnn_v75/nodule_feature_cnn_v75_best_auc.pth
+  - Verifying on 8207 samples...
+
+
+--- 最终验证性能 ---
+  - 数据集: data/dataset_sop7/all_verify_sop.csv
+  - 样本数: 8207
+  --------------------
+  - BOM AUC:         0.8388
+  - BOM Accuracy:    0.8020
+  - BOM Sensitivity: 0.8527
+  - BOM Specificity: 0.6434
+  - Composition  Acc: 0.9263
+  - Echo         Acc: 0.9328
+  - Foci         Acc: 0.9768
+  - Margin       Acc: 0.8630
+  - Shape        Acc: 0.4652
+  - Ti_rads      Acc: 0.7442
+  --------------------
+📊 V64训练特色:
+  - EfficientNet-B0多任务架构 (5.03M参数)
+  - 7个分类任务 (BOM, TI-RADS, 5个征象)
+  - OOF_p_true_threshold=0.2, image_index_threshold=16
+  - 复杂的五重数据筛选策略
+  - 嵌入特征映射便于推理
+📁 模型路径: models/nodule_feature_cnn_v75/nodule_feature_cnn_v75_best_auc.pth

@@ -1,0 +1,73 @@
+models:
+  classify_model:
+    backbone: efficientnet_b0
+    func: 甲状腺结节良恶分类+征象分类模型
+    labels_mapping:
+      bom:
+        阳性: 1
+        阴性: 0
+      composition:
+        囊实性: 1
+        囊性: 0
+        实性: 2
+      echo:
+        不均质回声: 5
+        低回声: 6
+        强回声: 4
+        无回声: 1
+        极低回声: 7
+        海绵样: 0
+        等回声: 3
+        高回声: 2
+      foci:
+        弧形强回声/环状强回声: 6
+        彗星尾征: 1
+        斑状强回声: 5
+        无回声区: 2
+        无点状强回声: 0
+        点状强回声: 7
+        粗大钙化: 4
+        高回声区: 3
+      margin:
+        不清: 3
+        尚清: 1
+        欠清: 2
+        清楚: 0
+      shape:
+        不规则: 3
+        尚规则: 1
+        欠规则: 2
+        规则: 0
+      ti_rads:
+        '1': 1
+        '2': 2
+        '3': 3
+        '4': 4
+        '5': 5
+    onnx_path: models/nodule_feature_cnn_v75_best_auc.onnx
+    path: models/nodule_feature_cnn_v75_best_auc.pth
+  detect_nodule_model:
+    backbone: yolo
+    func: 甲状腺结节检测模型
+    onnx_path: models/thyroid_nodules_detect_v1.250406.onnx
+    path: models/thyroid_nodules_detect_v1.250406.pt
+  detect_us_region_model:
+    backbone: yolo
+    func: 超声区域检测模型
+    onnx_path: models/us_region_detector_v2_best.onnx
+    path: models/us_region_detector_v2_best.pt
+  segment_nodule_model:
+    backbone: yolo
+    func: 甲状腺结节分割模型
+    onnx_path: models/nodule_us_segment_model_v3_best.onnx
+    path: models/nodule_us_segment_model_v3_best.pt
+# 模型置信度阈值配置 - 统一管理所有模型的阈值参数
+model_thresholds:
+  segment_nodule_model:
+    pytorch_confidence: 0.3      # PyTorch分割模型置信度阈值
+    onnx_confidence: 0.3        # ONNX分割模型置信度阈值
+  detect_nodule_model:
+    pytorch_confidence: 0.45      # PyTorch检测模型置信度阈值
+    onnx_confidence: 0.45         # ONNX检测模型置信度阈值
+  classify_model:
+    confidence: 0.5              # 分类模型良恶置信度阈值（为了调控灵敏度和特异度）
