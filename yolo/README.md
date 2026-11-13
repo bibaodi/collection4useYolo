@@ -18,11 +18,8 @@ classifiers).
 | `validateModel_Classify.py` | classification validation | prompts y/n |
 | `useSegModelCropUSImg2NoduleOnlyRegionImg.py` | batch segment + crop | `-m -d -o --save-types` |
 | `analyseModelBasicStructureUsingPred.py` | model introspection | |
-| `splitClsDataset3.py` | classification train/val split | per-class dirs |
+| `splitClsDataset3.py` | classification train/val split | per-class dirs; the only split-cls variant kept |
 | `splitSegDataset-copyOp.py` / `splitSegDataset-symOp.py` | segmentation train/val split | copy / symlink |
-
-Older split variants (`splitClsDataset.py`, `splitClsDataset2.py`) are kept
-for reference; prefer `splitClsDataset3.py`.
 
 ## Configuration by editing
 

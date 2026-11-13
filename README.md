@@ -100,6 +100,9 @@ machine-specific, superseded, or too large for git:
 | `thyroid-data/srcs/annotationFormatConverter/adjustJsonCoordinates_basedCropedUsImgRectangle.py` | Superseded by `cropScreenshotAndAdjustJson.py` |
 | `thyroid-data/srcs/annotationFormatConverter/convertXiaobaiNodulesFormartTolabelme.py` | Superseded by `srcs/convert_ThyNodulesJson.py` |
 | `scripts/rm_top700.sh`, `split.sh`, `get_top_700_lines.sh`, `moveHeadN2NewFolder.sh` | One-off destructive / superseded |
+| `yolo/splitClsDataset.py`, `yolo/splitClsDataset2.py` | Superseded by `splitClsDataset3.py` |
+| `demos/demo01.py`, `demos/demo02.py` | Superseded by `demo03-thynodu.py` |
+| `thyroid-data/42scripts/findFieldsNotCorrect.sh`, `sendThynodulesDataSetToS3.sh` | Duplicated in top-level `scripts/` |
 | `nodule-classification/someresults/`, `logs/` | Moved to git-ignored `data/` |
 | `thyroid-data/screened_tirads_bethesda_records.csv`, `thyroidNodulesStatistics-*.xlsx`, `srcs/processImgs/output-*` | Moved to git-ignored `data/` |
 | `thyroid-data/jupyterNotebooks/`, `operation.history/`, `ref_srcs/` | Archived under `docs/history/` |

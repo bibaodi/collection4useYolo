@@ -18,7 +18,7 @@ Originally `ml_thyroid.01_etonTrainCodes` (`bibaodi/thyroid_train01`).
 | `srcs/utils/` | Shared logger (`glog`), helpers, task-type definitions |
 | `srcs/dicom_tags_reader/` | DICOM tag reader (Python + Java app) |
 | `srcs/kewei-db-presentation/` | Spreadsheet matching / report generation |
-| `42scripts/` | Operation shell scripts (auto-label loops, DICOM renaming, S3) |
+| `42scripts/` | Operation shell scripts (auto-label loops, DICOM renaming); shared S3/label-validation helpers live in `../scripts/` |
 | `config/` | Training YAML for the thyroid-nodule classifier |
 | `tests/` | Logger smoke tests |
 | `notebooks/processImgs/` | Ultrasound-cropping experiments (moved from `srcs/processImgs/`) |

@@ -12,7 +12,6 @@ the ML pipeline and should not be coupled to it.
 | `260615-docker/` | Docker + X11 (`xeyes`) |
 | `260917-algo_PID/` | PID control tuning |
 | `avx2-demos/` | AVX2 intrinsics, dispatch, Eigen, CUDA |
-| `demo01.py`, `demo02.py` | Minimal Ultralytics YOLO quickstarts |
 | `demo03-thynodu.py` | YOLO training/prediction against the thyroid dataset |
 | `demo4SAM2InUltralytics.py` | SAM2 in Ultralytics |
 | `inspectingSettings.py` | Inspect Ultralytics settings |
