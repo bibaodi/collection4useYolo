@@ -1,0 +1,41 @@
+# Copy to config.yaml and fill in. Prefer environment variables for secrets:
+#   export KSYUN_ACCESS_KEY=...
+#   export KSYUN_SECRET_KEY=...
+ksyun:
+  access_key: ""
+  secret_key: ""
+  region: cn-beijing-6
+
+  aicp_endpoint: https://aicp.api.ksyun.com
+  bill_endpoint: https://bill-union.api.ksyun.com
+  iam_endpoint: https://iam.api.ksyun.com
+  rm_endpoint: https://resourcemanager.api.ksyun.com
+
+  aicp_service: aicp
+  bill_service: bill-union
+  iam_service: iam
+  rm_service: resourcemanager
+
+  product_group_name: 星流
+  product_group_code: null
+  pay_type: 1
+  reasoning_types: [normal, batch, web]
+
+  timeout: 60
+  retries: 3
+  max_pages: 1000
+  output_dir: ./output
+
+  # Optional: map API keys to managed sub-accounts (托管子账号) when
+  # ListAccounts cannot discover them or the key is not returned with an owner.
+  key_subaccount_map: {}
+  # key_subaccount_map:
+  #   "API-KEY-1319703773481033728": "2031447841"
+
+  # Optional: override model prices (per 1,000,000 tokens).
+  price_overrides: {}
+  # price_overrides:
+  #   "deepseek-r1-0528":
+  #     online_input: 0.004
+  #     online_cache_right: 0.0008
+  #     online_output: 0.016
